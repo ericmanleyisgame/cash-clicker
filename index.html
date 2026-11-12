@@ -88,22 +88,19 @@ const generatedNames = [
 ];
 function allUpgrades(){
  const list=[...upgrades];
- const factoryOwned=state.counts.factory||0;
- if(factoryOwned<1)return list;
- let tier=0;
- while(tier<1000){
+ for(let tier=0;tier<1000;tier++){
+  const unlockAt=Math.floor(500*Math.pow(4,tier));
+  if(state.lifetimeEarned<unlockAt)break;
   const id="generated-"+tier;
   const name=generatedNames[tier%generatedNames.length]+(tier>=generatedNames.length?" · Tier "+(tier+1):"");
-  const amount=Math.floor(100*Math.pow(2,tier));
+  const amount=Math.floor(25*Math.pow(3,tier));
   const isClick=tier%2===0;
-  list.push({id,name,desc:"+"+amount.toLocaleString("en-US")+(isClick?" cash per click":" cash per second"),base:Math.floor(5000*Math.pow(4,tier)),growth:2.15,type:isClick?"click":"auto",amount});
-  if((state.counts[id]||0)<3)break;
-  tier++;
+  list.push({id,name,desc:"+"+amount.toLocaleString("en-US")+(isClick?" cash per click":" cash per second"),base:Math.floor(unlockAt*1.25),growth:1.9,type:isClick?"click":"auto",amount});
  }
  return list;
 }
-let state={cash:0,clickPower:1,auto:0,counts:{}};
-function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}}
+let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0};
+function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}if(typeof state.lifetimeEarned!=="number")state.lifetimeEarned=state.cash;}
 function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
 function cost(u){return Math.floor(u.base*Math.pow(u.growth,state.counts[u.id]||0));}
 function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
@@ -156,15 +153,15 @@ function render(){
   btn.addEventListener("click",()=>{if(state.cash>=price){state.cash-=price;state.counts[u.id]=owned+1;if(u.type==="click")state.clickPower+=u.amount;else state.auto+=u.amount;save();render();}});
   row.append(info,btn);shop.append(row);
  });
- const factoryOwned=state.counts.factory||0;
- if(factoryOwned<1){const note=document.createElement("p");note.className="section-note";note.textContent="Keep upgrading your Mini Factory to unlock endless new upgrade types.";shop.append(note);}
- else {const nextTier=allUpgrades().filter(u=>u.id.startsWith("generated-")).length-1;const current=state.counts["generated-"+nextTier]||0;if(current>=3){const note=document.createElement("p");note.className="section-note";note.textContent="New upgrade unlocked! Keep going to discover more.";shop.append(note);}}
+ const nextTier=allUpgrades().filter(u=>u.id.startsWith("generated-")).length;
+ const nextUnlock=Math.floor(500*Math.pow(4,nextTier));
+ const note=document.createElement("p");note.className="section-note";note.textContent="Next new upgrade unlocks at "+money(nextUnlock)+" total earned. Lifetime earned: "+money(state.lifetimeEarned)+".";shop.append(note);
 }
 document.getElementById("clicker").addEventListener("click",()=>{
- state.cash+=state.clickPower;document.getElementById("clickNote").textContent="+"+money(state.clickPower)+" — nice!";
+ state.cash+=state.clickPower;state.lifetimeEarned+=state.clickPower;document.getElementById("clickNote").textContent="+"+money(state.clickPower)+" — nice!";
  save();render();syncScore();
 });
-setInterval(()=>{if(state.auto>0){state.cash+=state.auto;save();render();syncScore();}},1000);
+setInterval(()=>{if(state.auto>0){state.cash+=state.auto;state.lifetimeEarned+=state.auto;save();render();syncScore();}},1000);
 load();render();connectPlayer();
 setInterval(loadLeaderboard,30000);
 </script>
