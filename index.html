@@ -75,11 +75,11 @@ let playerId = null;
 let playerName = localStorage.getItem("cashClickerUsername") || "";
 let lastCloudSave = 0;
 const upgrades = [
- {id:"better",name:"Better mouse",desc:"+1 cash per click",base:25,growth:1.55,type:"click",amount:1},
- {id:"lemonade",name:"Lemonade stand",desc:"+1 cash per second",base:60,growth:1.6,type:"auto",amount:1},
- {id:"keyboard",name:"Gaming keyboard",desc:"+5 cash per click",base:180,growth:1.65,type:"click",amount:5},
- {id:"shop",name:"Corner store",desc:"+8 cash per second",base:450,growth:1.7,type:"auto",amount:8},
- {id:"factory",name:"Mini factory",desc:"+35 cash per second",base:2200,growth:1.75,type:"auto",amount:35}
+ {id:"better",name:"Better mouse",desc:"+1 cash per click",base:25,fixedPrice:25,type:"click",amount:1},
+ {id:"lemonade",name:"Lemonade stand",desc:"+1 cash per second",base:60,fixedPrice:60,type:"auto",amount:1},
+ {id:"keyboard",name:"Gaming keyboard",desc:"+5 cash per click",base:180,fixedPrice:1805,type:"click",amount:5},
+ {id:"shop",name:"Corner store",desc:"+8 cash per second",base:450,fixedPrice:450,type:"auto",amount:8},
+ {id:"factory",name:"Mini factory",desc:"+35 cash per second",base:2200,fixedPrice:22005,type:"auto",amount:35}
 ];
 const generatedNames = [
  "Delivery Fleet","Solar Farm","Tech Campus","Robot Workforce","Space Mining Co.",
@@ -95,14 +95,14 @@ function allUpgrades(){
   const name=generatedNames[tier%generatedNames.length]+(tier>=generatedNames.length?" · Tier "+(tier+1):"");
   const amount=Math.floor(25*Math.pow(3,tier));
   const isClick=tier%2===0;
-  list.push({id,name,desc:"+"+amount.toLocaleString("en-US")+(isClick?" cash per click":" cash per second"),base:Math.floor(unlockAt*1.25),growth:1.9,type:isClick?"click":"auto",amount});
+  list.push({id,name,desc:"+"+amount.toLocaleString("en-US")+(isClick?" cash per click":" cash per second"),base:Math.floor(unlockAt*1.25),fixedPrice:Math.floor(unlockAt*1.25),type:isClick?"click":"auto",amount});
  }
  return list;
 }
 let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0};
 function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}if(typeof state.lifetimeEarned!=="number")state.lifetimeEarned=state.cash;}
 function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
-function cost(u){return Math.floor(u.base);}
+function cost(u){return u.fixedPrice ?? Math.floor(u.base);}
 function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
 async function connectPlayer(){
  try{
