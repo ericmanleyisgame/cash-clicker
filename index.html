@@ -30,12 +30,27 @@ h1{font-size:clamp(2rem,5vw,3.3rem);letter-spacing:-.06em;margin:9px 0}
 .buy:disabled{background:#dce4e9;color:#82909c;cursor:not-allowed}
 .section-note{font-size:.82rem;color:var(--muted);line-height:1.5;margin:14px 0 0}
 footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px}
+ .offline-modal{position:fixed;inset:0;z-index:1000;background:rgba(18,12,35,.62);display:grid;place-items:center;padding:20px}
+.offline-modal[hidden]{display:none}
+.offline-box{width:min(420px,100%);background:#fff;border:1px solid #e5dcff;border-radius:24px;padding:30px 24px;text-align:center;box-shadow:0 24px 80px rgba(24,12,50,.28)}
+.offline-emoji{font-size:2.5rem}
+.offline-box h2{font-size:1.7rem;margin:10px 0}
+.offline-box p{color:var(--muted);font-size:1.05rem;line-height:1.5;margin:0 0 22px}
+.offline-box .small-btn{font-size:1rem;padding:12px 18px}
 @media(max-width:760px){.stats{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.stats .card{padding:15px}.click-panel{padding:24px 16px}}
 .leaderboard{margin-top:18px}.leaderboard-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.leaderboard h2{margin:0;font-size:1.2rem}.name-row{display:flex;gap:8px;margin:14px 0}.name-row input{min-width:0;flex:1;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit}.small-btn{border:0;border-radius:10px;padding:10px 13px;background:var(--green);color:#fff;font-weight:800;cursor:pointer}.rank-row{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-top:1px solid var(--line)}.rank-row:first-child{border-top:0}.rank-name{font-weight:750;overflow-wrap:anywhere}.rank-score{font-weight:800;color:var(--green-dark);white-space:nowrap}.leaderboard-status{color:var(--muted);font-size:.82rem;margin:8px 0}.my-rank{font-size:.85rem;color:var(--muted);margin-top:10px}
 </style>
 </head>
 <body>
 <header><div class="brand">cash<span>clicker</span></div><div class="pill">Your tiny empire starts here</div></header>
+<div id="offlineModal" class="offline-modal" hidden role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+ <div class="offline-box">
+  <div class="offline-emoji">💜</div>
+  <h2 id="offlineTitle">Welcome back!</h2>
+  <p id="offlineMessage">You earned $0 while you were gone.</p>
+  <button id="collectOffline" class="small-btn">Collect earnings</button>
+ </div>
+</div>
 <main>
   <section class="hero"><div class="eyebrow">Build • Upgrade • Repeat</div><h1>Make your first million.</h1><p class="subtitle">Click for cash, then let your upgrades do the work.</p></section>
   <section class="stats">
@@ -110,7 +125,8 @@ function applyOfflineEarnings(){
  if(earned>0){
   state.cash+=earned;
   state.lifetimeEarned+=earned;
-  document.getElementById("clickNote").textContent="Welcome back! You earned "+money(earned)+" while away.";
+  document.getElementById("offlineMessage").textContent="You earned "+money(earned)+" while you were gone!";
+  document.getElementById("offlineModal").hidden=false;
  }
  save();
 }
@@ -142,6 +158,7 @@ async function loadLeaderboard(){
  data.forEach((entry,index)=>{const row=document.createElement("div");row.className="rank-row";const name=document.createElement("span");name.className="rank-name";name.textContent=(index+1)+". "+(entry.username||"Player");const score=document.createElement("span");score.className="rank-score";score.textContent=money(entry.score);row.append(name,score);list.append(row);});
  const mine=data.findIndex(entry=>entry.user_id===playerId);document.getElementById("myRank").textContent=mine>=0?"Your current rank: #"+(mine+1):"Keep earning to climb the rankings!";
 }
+document.getElementById("collectOffline").addEventListener("click",()=>{document.getElementById("offlineModal").hidden=true;});
 document.getElementById("saveName").addEventListener("click",async()=>{
  const chosen=document.getElementById("playerName").value.trim().replace(/\\s+/g," ").slice(0,18);
  if(!chosen){document.getElementById("leaderboardStatus").textContent="Enter a nickname first.";return;}
