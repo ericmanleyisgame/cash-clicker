@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cash Clicker</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#68758a;--green:#16a36a;--green-dark:#08784a;--line:#e5ebf2;--shadow:0 12px 32px rgba(24,39,75,.08)}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#f5f8fc,#eaf4ef);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:22px max(5vw,20px);gap:14px;flex-wrap:wrap}
+.brand{font-size:1.25rem;font-weight:850;letter-spacing:-.04em}.brand span{color:var(--green)}
+.pill{background:#e4f7ee;color:var(--green-dark);font-weight:700;border-radius:999px;padding:8px 12px;font-size:.82rem}
+main{max-width:1100px;margin:12px auto 50px;padding:0 20px}
+.hero{text-align:center;margin:28px auto 24px}.eyebrow{color:var(--green-dark);font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+h1{font-size:clamp(2rem,5vw,3.3rem);letter-spacing:-.06em;margin:9px 0}
+.subtitle{color:var(--muted);margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.stat-label{color:var(--muted);font-size:.85rem;font-weight:650}.stat-value{font-size:clamp(1.35rem,3vw,2rem);font-weight:850;letter-spacing:-.04em;margin-top:7px}
+.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start}
+.click-panel{text-align:center;padding:28px 22px}.money{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;letter-spacing:-.06em;margin:10px 0 4px}.hint{color:var(--muted);font-size:.9rem}
+.clicker{margin:28px auto 12px;width:min(220px,65vw);aspect-ratio:1;border:0;border-radius:50%;background:radial-gradient(circle at 35% 25%,#52d99b,#16a36a 65%,#08784a);color:white;font-size:3.2rem;font-weight:900;box-shadow:0 14px 0 #08784a,0 22px 32px rgba(22,163,106,.25);cursor:pointer;transition:transform .08s,box-shadow .08s}
+.clicker:active{transform:translateY(9px) scale(.98);box-shadow:0 5px 0 #08784a,0 12px 20px rgba(22,163,106,.2)}
+.clicker:focus-visible,button:focus-visible{outline:3px solid #263fcb;outline-offset:4px}
+.click-note{min-height:24px;color:var(--green-dark);font-weight:750}
+.shop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.shop-head h2{margin:0;font-size:1.2rem}
+.upgrade{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.upgrade:first-of-type{border-top:0}.upgrade-name{font-weight:800}.upgrade-desc{font-size:.82rem;color:var(--muted);margin-top:4px}
+.buy{border:0;border-radius:12px;padding:10px 13px;background:var(--green);color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}
+.buy:disabled{background:#dce4e9;color:#82909c;cursor:not-allowed}
+.section-note{font-size:.82rem;color:var(--muted);line-height:1.5;margin:14px 0 0}
+footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px}
+@media(max-width:760px){.stats{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.stats .card{padding:15px}.click-panel{padding:24px 16px}}
+</style>
+</head>
+<body>
+<header><div class="brand">cash<span>clicker</span></div><div class="pill">Your tiny empire starts here</div></header>
+<main>
+  <section class="hero"><div class="eyebrow">Build • Upgrade • Repeat</div><h1>Make your first million.</h1><p class="subtitle">Click for cash, then let your upgrades do the work.</p></section>
+  <section class="stats">
+    <div class="card"><div class="stat-label">Cash</div><div class="stat-value" id="cash">$0</div></div>
+    <div class="card"><div class="stat-label">Per click</div><div class="stat-value" id="perClick">$1</div></div>
+    <div class="card"><div class="stat-label">Passive income</div><div class="stat-value" id="perSecond">$0 / sec</div></div>
+  </section>
+  <section class="layout">
+    <div class="card click-panel">
+      <div class="stat-label">YOUR BALANCE</div><div class="money" id="bigCash">$0</div>
+      <div class="hint">Tap the button to earn money</div>
+      <button class="clicker" id="clicker" aria-label="Earn one click of money">$</button>
+      <div class="click-note" id="clickNote">Every click counts.</div>
+      <p class="section-note">Your progress saves automatically in this browser.</p>
+    </div>
+    <div class="card">
+      <div class="shop-head"><h2>Upgrade shop</h2><span class="pill">Invest</span></div>
+      <div id="shop"></div>
+      <p class="section-note">Buy upgrades to increase your clicks or earn cash automatically every second.</p>
+    </div>
+  </section>
+</main>
+<footer>Cash Clicker · A little game about growing a lot.</footer>
+<script>
+const upgrades = [
+ {id:"better",name:"Better mouse",desc:"+1 cash per click",base:25,growth:1.55,type:"click",amount:1},
+ {id:"lemonade",name:"Lemonade stand",desc:"+1 cash per second",base:60,growth:1.6,type:"auto",amount:1},
+ {id:"keyboard",name:"Gaming keyboard",desc:"+5 cash per click",base:180,growth:1.65,type:"click",amount:5},
+ {id:"shop",name:"Corner store",desc:"+8 cash per second",base:450,growth:1.7,type:"auto",amount:8},
+ {id:"factory",name:"Mini factory",desc:"+35 cash per second",base:2200,growth:1.75,type:"auto",amount:35}
+];
+let state={cash:0,clickPower:1,auto:0,counts:{}};
+function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}}
+function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
+function cost(u){return Math.floor(u.base*Math.pow(u.growth,state.counts[u.id]||0));}
+function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
+function render(){
+ document.getElementById("cash").textContent=money(state.cash);
+ document.getElementById("bigCash").textContent=money(state.cash);
+ document.getElementById("perClick").textContent=money(state.clickPower);
+ document.getElementById("perSecond").textContent=money(state.auto)+" / sec";
+ const shop=document.getElementById("shop");shop.innerHTML="";
+ upgrades.forEach(u=>{
+  const price=cost(u),owned=state.counts[u.id]||0;
+  const row=document.createElement("div");row.className="upgrade";
+  const info=document.createElement("div");
+  const name=document.createElement("div");name.className="upgrade-name";name.textContent=u.name+" · "+owned;
+  const desc=document.createElement("div");desc.className="upgrade-desc";desc.textContent=u.desc;
+  info.append(name,desc);
+  const btn=document.createElement("button");btn.className="buy";btn.textContent="Buy "+money(price);btn.disabled=state.cash<price;
+  btn.addEventListener("click",()=>{if(state.cash>=price){state.cash-=price;state.counts[u.id]=owned+1;if(u.type==="click")state.clickPower+=u.amount;else state.auto+=u.amount;save();render();}});
+  row.append(info,btn);shop.append(row);
+ });
+}
+document.getElementById("clicker").addEventListener("click",()=>{
+ state.cash+=state.clickPower;document.getElementById("clickNote").textContent="+"+money(state.clickPower)+" — nice!";
+ save();render();
+});
+setInterval(()=>{if(state.auto>0){state.cash+=state.auto;save();render();}},1000);
+load();render();
+</script>
+</body>
+</html>
