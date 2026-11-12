@@ -31,6 +31,7 @@ h1{font-size:clamp(2rem,5vw,3.3rem);letter-spacing:-.06em;margin:9px 0}
 .section-note{font-size:.82rem;color:var(--muted);line-height:1.5;margin:14px 0 0}
 footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px}
 @media(max-width:760px){.stats{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.stats .card{padding:15px}.click-panel{padding:24px 16px}}
+.leaderboard{margin-top:18px}.leaderboard-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.leaderboard h2{margin:0;font-size:1.2rem}.name-row{display:flex;gap:8px;margin:14px 0}.name-row input{min-width:0;flex:1;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit}.small-btn{border:0;border-radius:10px;padding:10px 13px;background:var(--green);color:#fff;font-weight:800;cursor:pointer}.rank-row{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-top:1px solid var(--line)}.rank-row:first-child{border-top:0}.rank-name{font-weight:750;overflow-wrap:anywhere}.rank-score{font-weight:800;color:var(--green-dark);white-space:nowrap}.leaderboard-status{color:var(--muted);font-size:.82rem;margin:8px 0}.my-rank{font-size:.85rem;color:var(--muted);margin-top:10px}
 </style>
 </head>
 <body>
@@ -56,9 +57,23 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px}
       <p class="section-note">Buy upgrades to increase your clicks or earn cash automatically every second.</p>
     </div>
   </section>
+  <section class="card leaderboard">
+    <div class="leaderboard-head"><h2>🌎 Global leaderboard</h2><span class="pill">Top 10 players</span></div>
+    <div class="name-row"><input id="playerName" maxlength="18" placeholder="Choose a nickname" aria-label="Your leaderboard nickname"><button class="small-btn" id="saveName">Save name</button></div>
+    <div class="leaderboard-status" id="leaderboardStatus">Connecting to the leaderboard…</div>
+    <div id="leaderboardList"></div>
+    <div class="my-rank" id="myRank"></div>
+  </section>
 </main>
 <footer>Cash Clicker · A little game about growing a lot.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://asiyltpfjvtwywrbxrge.supabase.co";
+const SUPABASE_KEY = "sb_publishable_592XZcMAYP6sI2D-TDEp3g_G1FzXpQn";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let playerId = null;
+let playerName = localStorage.getItem("cashClickerUsername") || "";
+let lastCloudSave = 0;
 const upgrades = [
  {id:"better",name:"Better mouse",desc:"+1 cash per click",base:25,growth:1.55,type:"click",amount:1},
  {id:"lemonade",name:"Lemonade stand",desc:"+1 cash per second",base:60,growth:1.6,type:"auto",amount:1},
@@ -71,6 +86,38 @@ function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave
 function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
 function cost(u){return Math.floor(u.base*Math.pow(u.growth,state.counts[u.id]||0));}
 function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
+async function connectPlayer(){
+ try{
+  let {data:{session}} = await db.auth.getSession();
+  if(!session){const result=await db.auth.signInAnonymously();if(result.error)throw result.error;session=result.data.session;}
+  playerId=session.user.id;
+  document.getElementById("playerName").value=playerName;
+  document.getElementById("leaderboardStatus").textContent="Connected. Choose a nickname to join the rankings.";
+  if(playerName) await syncScore(true);
+  await loadLeaderboard();
+ }catch(error){document.getElementById("leaderboardStatus").textContent="Leaderboard connection failed. Try refreshing the page." ;console.error(error);}
+}
+async function syncScore(force=false){
+ if(!playerId||!playerName)return;
+ const now=Date.now();if(!force&&now-lastCloudSave<10000)return;lastCloudSave=now;
+ const row={user_id:playerId,username:playerName,player_name:playerName,score:Math.floor(state.cash),updated_at:new Date().toISOString()};
+ const {error}=await db.from("leaderboard").upsert(row,{onConflict:"user_id"});
+ if(error){console.error(error);document.getElementById("leaderboardStatus").textContent="Could not save your score right now.";}else{document.getElementById("leaderboardStatus").textContent="Your score is synced to the global leaderboard.";await loadLeaderboard();}
+}
+async function loadLeaderboard(){
+ const {data,error}=await db.from("leaderboard").select("username,score,user_id").order("score",{ascending:false}).limit(10);
+ const list=document.getElementById("leaderboardList");list.replaceChildren();
+ if(error){document.getElementById("leaderboardStatus").textContent="Could not load rankings.";console.error(error);return;}
+ if(!data.length){list.textContent="No scores yet. Be the first!";return;}
+ data.forEach((entry,index)=>{const row=document.createElement("div");row.className="rank-row";const name=document.createElement("span");name.className="rank-name";name.textContent=(index+1)+". "+(entry.username||"Player");const score=document.createElement("span");score.className="rank-score";score.textContent=money(entry.score);row.append(name,score);list.append(row);});
+ const mine=data.findIndex(entry=>entry.user_id===playerId);document.getElementById("myRank").textContent=mine>=0?"Your current rank: #"+(mine+1):"Keep earning to climb the rankings!";
+}
+document.getElementById("saveName").addEventListener("click",async()=>{
+ const chosen=document.getElementById("playerName").value.trim().replace(/\\s+/g," ").slice(0,18);
+ if(!chosen){document.getElementById("leaderboardStatus").textContent="Enter a nickname first.";return;}
+ playerName=chosen;localStorage.setItem("cashClickerUsername",playerName);
+ if(playerId)await syncScore(true);else document.getElementById("leaderboardStatus").textContent="Connecting… your nickname will be saved when connected.";
+});
 function render(){
  document.getElementById("cash").textContent=money(state.cash);
  document.getElementById("bigCash").textContent=money(state.cash);
@@ -91,10 +138,11 @@ function render(){
 }
 document.getElementById("clicker").addEventListener("click",()=>{
  state.cash+=state.clickPower;document.getElementById("clickNote").textContent="+"+money(state.clickPower)+" — nice!";
- save();render();
+ save();render();syncScore();
 });
-setInterval(()=>{if(state.auto>0){state.cash+=state.auto;save();render();}},1000);
-load();render();
+setInterval(()=>{if(state.auto>0){state.cash+=state.auto;save();render();syncScore();}},1000);
+load();render();connectPlayer();
+setInterval(loadLeaderboard,30000);
 </script>
 </body>
 </html>
