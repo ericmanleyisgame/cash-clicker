@@ -102,7 +102,7 @@ function allUpgrades(){
 let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0};
 function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}if(typeof state.lifetimeEarned!=="number")state.lifetimeEarned=state.cash;}
 function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
-function cost(u){return Math.floor(u.base*Math.pow(u.growth,state.counts[u.id]||0));}
+function cost(u){return Math.floor(u.base);}
 function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
 async function connectPlayer(){
  try{
