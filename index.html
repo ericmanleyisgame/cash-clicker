@@ -77,9 +77,9 @@ let lastCloudSave = 0;
 const upgrades = [
  {id:"better",name:"Better mouse",desc:"+1 cash per click",base:25,fixedPrice:25,type:"click",amount:1},
  {id:"lemonade",name:"Lemonade stand",desc:"+1 cash per second",base:60,fixedPrice:60,type:"auto",amount:1},
- {id:"keyboard",name:"Gaming keyboard",desc:"+5 cash per click",base:180,fixedPrice:1805,type:"click",amount:5},
+ {id:"keyboard",name:"Gaming keyboard",desc:"+5 cash per click",base:180,fixedPrice:180,type:"click",amount:5},
  {id:"shop",name:"Corner store",desc:"+8 cash per second",base:450,fixedPrice:450,type:"auto",amount:8},
- {id:"factory",name:"Mini factory",desc:"+35 cash per second",base:2200,fixedPrice:22005,type:"auto",amount:35}
+ {id:"factory",name:"Mini factory",desc:"+35 cash per second",base:2200,fixedPrice:2200,type:"auto",amount:35}
 ];
 const generatedNames = [
  "Delivery Fleet","Solar Farm","Tech Campus","Robot Workforce","Space Mining Co.",
@@ -99,9 +99,21 @@ function allUpgrades(){
  }
  return list;
 }
-let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0};
+let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0,lastSavedAt:0};
 function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}if(typeof state.lifetimeEarned!=="number")state.lifetimeEarned=state.cash;}
-function save(){localStorage.setItem("cashClickerSave",JSON.stringify(state));}
+function save(){state.lastSavedAt=Date.now();localStorage.setItem("cashClickerSave",JSON.stringify(state));}
+function applyOfflineEarnings(){
+ const now=Date.now();
+ const last=typeof state.lastSavedAt==="number"&&state.lastSavedAt>0?state.lastSavedAt:now;
+ const elapsed=Math.min(Math.max(0,(now-last)/1000),7*24*60*60);
+ const earned=Math.floor(state.auto*elapsed);
+ if(earned>0){
+  state.cash+=earned;
+  state.lifetimeEarned+=earned;
+  document.getElementById("clickNote").textContent="Welcome back! You earned "+money(earned)+" while away.";
+ }
+ save();
+}
 function cost(u){return u.fixedPrice ?? Math.floor(u.base);}
 function money(n){return "$"+Math.floor(n).toLocaleString("en-US");}
 async function connectPlayer(){
@@ -162,7 +174,8 @@ document.getElementById("clicker").addEventListener("click",()=>{
  save();render();syncScore();
 });
 setInterval(()=>{if(state.auto>0){state.cash+=state.auto;state.lifetimeEarned+=state.auto;save();render();syncScore();}},1000);
-load();render();connectPlayer();
+load();applyOfflineEarnings();render();connectPlayer();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){applyOfflineEarnings();render();syncScore();}});
 setInterval(loadLeaderboard,30000);
 </script>
 </body>
