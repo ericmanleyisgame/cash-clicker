@@ -116,7 +116,7 @@ function allUpgrades(){
 }
 let state={cash:0,clickPower:1,auto:0,counts:{},lifetimeEarned:0,lastSavedAt:0};
 function load(){try{const saved=JSON.parse(localStorage.getItem("cashClickerSave"));if(saved&&typeof saved.cash==="number")state={...state,...saved};}catch(e){}if(typeof state.lifetimeEarned!=="number")state.lifetimeEarned=state.cash;}
-function save(){state.lastSavedAt=Date.now();localStorage.setItem("cashClickerSave",JSON.stringify(state));}
+function save(){if(document.visibilityState!=="hidden")state.lastSavedAt=Date.now();localStorage.setItem("cashClickerSave",JSON.stringify(state));}
 function applyOfflineEarnings(){
  const now=Date.now();
  const last=typeof state.lastSavedAt==="number"&&state.lastSavedAt>0?state.lastSavedAt:now;
@@ -190,9 +190,10 @@ document.getElementById("clicker").addEventListener("click",()=>{
  state.cash+=state.clickPower;state.lifetimeEarned+=state.clickPower;document.getElementById("clickNote").textContent="+"+money(state.clickPower)+" — nice!";
  save();render();syncScore();
 });
-setInterval(()=>{if(state.auto>0){state.cash+=state.auto;state.lifetimeEarned+=state.auto;save();render();syncScore();}},1000);
+setInterval(()=>{if(document.visibilityState==="visible"&&state.auto>0){state.cash+=state.auto;state.lifetimeEarned+=state.auto;save();render();syncScore();}},1000);
 load();applyOfflineEarnings();render();connectPlayer();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){applyOfflineEarnings();render();syncScore();}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){save();}else{applyOfflineEarnings();render();syncScore();}});
+window.addEventListener("pagehide",save);
 setInterval(loadLeaderboard,30000);
 </script>
 </body>
