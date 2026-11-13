@@ -104,6 +104,10 @@ try {
       message.textContent = access.message || "what did i do to you?";
       message.style.cssText = "font-size:clamp(24px,5vw,42px);text-align:center;padding:24px;";
       document.body.appendChild(message);
+      const notice = document.createElement("div");
+      notice.textContent = "Notice: this page records the date and time it is opened.";
+      notice.style.cssText = "position:fixed;bottom:18px;left:16px;right:16px;font-size:12px;color:#666;text-align:center;";
+      document.body.appendChild(notice);
       return;
     }
   }
