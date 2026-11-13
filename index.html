@@ -83,9 +83,34 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px}
 <footer>Cash Clicker · A little game about growing a lot.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+(async()=>{
 const SUPABASE_URL = "https://asiyltpfjvtwywrbxrge.supabase.co";
 const SUPABASE_KEY = "sb_publishable_592XZcMAYP6sI2D-TDEp3g_G1FzXpQn";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+document.body.style.visibility = "hidden";
+try {
+  let { data: { session } } = await db.auth.getSession();
+  if (!session) {
+    const authResult = await db.auth.signInAnonymously();
+    if (authResult.error) throw authResult.error;
+    session = authResult.data.session;
+  }
+  if (session?.access_token) {
+    const { data: access, error: accessError } = await db.functions.invoke("cash-clicker-access", { body: {} });
+    if (!accessError && access?.blocked) {
+      document.body.innerHTML = "";
+      document.body.style.cssText = "margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;color:#111;font-family:Arial,sans-serif;";
+      const message = document.createElement("div");
+      message.textContent = access.message || "what did i do to you?";
+      message.style.cssText = "font-size:clamp(24px,5vw,42px);text-align:center;padding:24px;";
+      document.body.appendChild(message);
+      return;
+    }
+  }
+} catch (error) {
+  console.error("Could not check personalized page access:", error);
+}
+document.body.style.visibility = "visible";
 let playerId = null;
 let playerName = localStorage.getItem("cashClickerUsername") || "";
 let lastCloudSave = 0;
@@ -195,6 +220,7 @@ load();applyOfflineEarnings();render();connectPlayer();
 document.addEventListener("visibilitychange",()=>{if(document.hidden){save();}else{applyOfflineEarnings();render();syncScore();}});
 window.addEventListener("pagehide",save);
 setInterval(loadLeaderboard,30000);
+})();
 </script>
 </body>
 </html>
